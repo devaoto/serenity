@@ -39,7 +39,9 @@ async fn main() {
             commands::vote(),
             commands::getvotes(),
             commands::ping(),
-            commands::send_verification()
+            commands::send_verification(),
+            commands::ban(),
+            commands::kick()
         ],
         prefix_options: poise::PrefixFrameworkOptions {
             prefix: Some("~".into()),

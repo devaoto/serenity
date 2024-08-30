@@ -1,6 +1,5 @@
 use poise::CreateReply;
-use serenity::all::{ CreateEmbed, ReactionType };
-
+use serenity::all::{ CreateEmbed, ReactionType, User };
 use crate::{ Context, Error };
 use std::time::Instant;
 
@@ -61,7 +60,6 @@ pub async fn getvotes(
     Ok(())
 }
 
-/// Ping the bot to check its latency
 #[poise::command(prefix_command, slash_command)]
 pub async fn ping(ctx: Context<'_>) -> Result<(), Error> {
     let start_time = Instant::now();
@@ -97,5 +95,54 @@ pub async fn send_verification(ctx: Context<'_>) -> Result<(), Error> {
         ctx.say("You are not authorized to use this command").await?;
     }
 
+    Ok(())
+}
+
+#[poise::command(prefix_command, slash_command)]
+pub async fn ban(
+    ctx: Context<'_>,
+    #[description = "The user you want to ban"] target: Option<User>,
+    #[description = "The reason"] reason: Option<String>,
+    #[description = "The days of messages"] dmd: Option<u8>
+) -> Result<(), Error> {
+    let guild_id = ctx.guild_id().unwrap();
+    let user_to_ban = target.unwrap();
+    let user_id = user_to_ban.id;
+    let reason = reason.unwrap_or_else(|| "".to_string());
+    let days_of_messages = dmd.unwrap_or(0);
+
+    if
+        let Err(err) = guild_id.ban_with_reason(
+            &ctx.http(),
+            user_id,
+            days_of_messages,
+            reason
+        ).await
+    {
+        ctx.say(format!("Failed to ban {}: {}", user_to_ban.name, err)).await?;
+        return Err(Error::from(err));
+    }
+
+    ctx.say(format!("{} has been banned", user_to_ban.name)).await?;
+    Ok(())
+}
+
+#[poise::command(prefix_command, slash_command)]
+pub async fn kick(
+    ctx: Context<'_>,
+    #[description = "The user you want to ban"] target: Option<User>,
+    #[description = "The reason"] reason: Option<String>
+) -> Result<(), Error> {
+    let guild_id = ctx.guild_id().unwrap();
+    let user_to_kick = target.unwrap();
+    let user_id = user_to_kick.id;
+    let reason = reason.unwrap_or_else(|| "".to_string());
+
+    if let Err(err) = guild_id.kick_with_reason(&ctx.http(), user_id, &reason).await {
+        ctx.say(format!("Failed to kick {}: {}", user_to_kick.name, err)).await?;
+        return Err(Error::from(err));
+    }
+
+    ctx.say(format!("{} has been kicked", user_to_kick.name)).await?;
     Ok(())
 }
